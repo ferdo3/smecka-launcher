@@ -36,9 +36,10 @@
   /* Full-bleed shell — top-level zostáva github.io (standalone bez Safari chrome),
      v2shell sa renderuje vo fullscreen iframe. v2shell je responzívny (device-width)
      → žiadny scale, iframe = 100%×100%. Safe-area padding → obsah nelezie pod notch. */
-  #appwrap{position:fixed;inset:0;z-index:1000;display:none;background:#16324f;overflow:hidden;
-    padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
-    padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+  /* ŽIADNY safe-area padding na shell — v2shell vnútri si rieši safe-area sám
+     (#topbar padding-top: env(safe-area-inset-top), #bottomnav padding-bottom). Inak by sa
+     safe-area zdvojila → veľa modrej hore/dole + menubar privysoko. iframe = celá obrazovka. */
+  #appwrap{position:fixed;inset:0;z-index:1000;display:none;background:#16324f;overflow:hidden}
   #appframe{display:block;border:0;background:#fff;width:100%;height:100%}
   #splash{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:16px;background:#16324f;color:#fff;
