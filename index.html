@@ -4,51 +4,61 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SMEČKA</title>
-<link rel="apple-touch-icon" href="apple-touch-icon.png?v=1">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
-<link rel="apple-touch-icon-precomposed" href="apple-touch-icon.png?v=1">
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=2">
+<link rel="apple-touch-icon-precomposed" href="apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2">
 <meta name="apple-mobile-web-app-title" content="SMEČKA">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#16324f">
 <!-- ŽIADNY manifest: start_url by pri spustení z plochy zahodil ?token=…
      Token držíme cez URL + localStorage. Standalone rieši apple-mobile-web-app-capable.
-     (Verný port U11 tréner launchera, zjednodušený — v2shell je responzívny, netreba DW scale.) -->
+     v2.60.111: nové logo SMEČKA Prešov (SVG) + redizajn landing/splash (mockup-schválené). -->
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;min-height:100%}
-  body{background:linear-gradient(160deg,#0f2438,#16324f 55%,#1f4a72);
+  body{background:radial-gradient(120% 80% at 50% 20%, #1f4a72 0%, #16324f 48%, #0f2438 100%);
     color:#fff;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:32px 22px;min-height:100vh}
-  img.ic{width:108px;height:108px;border-radius:24px;box-shadow:0 8px 24px rgba(0,0,0,.3);margin-bottom:18px}
-  h1{font-size:28px;font-weight:800;margin:0 0 4px;letter-spacing:.5px}
-  p.sub{font-size:15px;opacity:.9;margin:0 0 26px}
-  a.btn,button.btn{display:inline-block;background:#fff;color:#16324f;font-weight:700;font-size:18px;
-    text-decoration:none;padding:15px 30px;border-radius:14px;border:0;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}
+    text-align:center;padding:40px 28px;min-height:100vh;position:relative;overflow:hidden}
+  body::before{content:"";position:absolute;top:17%;left:50%;transform:translateX(-50%);
+    width:38vh;height:38vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.15),transparent 65%);pointer-events:none}
+  /* LANDING — nové logo (SVG), ~20% menšie, žltý button */
+  img.logo{width:min(62vw,264px);height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));position:relative;z-index:2;margin-bottom:22px}
+  .sub{font-size:14px;font-weight:600;opacity:.92;letter-spacing:.3px;margin:0 0 30px;position:relative;z-index:2}
+  a.btn,button.btn{position:relative;z-index:2;display:inline-flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#f6c64a,#e9a92f);color:#16324f;font-weight:900;font-size:16px;
+    text-decoration:none;padding:13px 36px;min-height:46px;border-radius:13px;border:0;
+    box-shadow:0 7px 18px rgba(233,169,47,.4);letter-spacing:.3px;cursor:pointer;font-family:inherit}
   a.btn.off{opacity:.45;pointer-events:none}
-  .hint{margin-top:30px;font-size:13px;opacity:.82;line-height:1.5;max-width:340px}
-  .warn{background:rgba(0,0,0,.22);border-radius:12px;padding:14px 16px}
+  .hint{margin-top:0;position:absolute;bottom:44px;left:30px;right:30px;z-index:2;font-size:12.5px;opacity:.82;line-height:1.55}
+  .hint b{color:#fff}
+  .warn{background:rgba(0,0,0,.22);border-radius:12px;padding:14px 16px;position:static;bottom:auto;left:auto;right:auto;margin-top:18px}
   .tokbox{margin-top:8px;display:flex;gap:8px;flex-direction:column;align-items:center}
   .tokbox input{font-size:16px;padding:12px 14px;border-radius:12px;border:0;width:260px;text-align:center;letter-spacing:1px}
   .hidden{display:none}
   /* Full-bleed shell — top-level zostáva github.io (standalone bez Safari chrome),
-     v2shell sa renderuje vo fullscreen iframe. v2shell je responzívny (device-width)
-     → žiadny scale, iframe = 100%×100%. Safe-area padding → obsah nelezie pod notch. */
-  /* ŽIADNY safe-area padding na shell — v2shell vnútri si rieši safe-area sám
-     (#topbar padding-top: env(safe-area-inset-top), #bottomnav padding-bottom). Inak by sa
-     safe-area zdvojila → veľa modrej hore/dole + menubar privysoko. iframe = celá obrazovka. */
+     v2shell sa renderuje vo fullscreen iframe. iframe = 100%×100%, v2shell rieši safe-area sám. */
   #appwrap{position:fixed;inset:0;z-index:1000;display:none;background:#16324f;overflow:hidden}
   #appframe{display:block;border:0;background:#fff;width:100%;height:100%}
-  #splash{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:16px;background:#16324f;color:#fff;
-    transition:opacity .3s;pointer-events:none}
+  /* SPLASH — nové logo + animácia, spinner na strede medzery logo↔footer, footer centrovaný */
+  #splash{position:absolute;inset:0;z-index:1;
+    background:radial-gradient(120% 80% at 50% 42%, #1f4a72 0%, #16324f 50%, #0f2438 100%);
+    color:#fff;transition:opacity .3s;pointer-events:none;overflow:hidden}
   #splash.hide{opacity:0}
-  #splash img{width:92px;height:92px;border-radius:22px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
-  .spin{width:34px;height:34px;border:4px solid rgba(255,255,255,.35);border-top-color:#fff;
-    border-radius:50%;animation:sp .8s linear infinite}
+  #splash::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
+    width:44vh;height:44vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.14),transparent 65%)}
+  #splash .slogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:min(58vw,240px);height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));z-index:2;
+    animation:pop .5s ease-out, breathe 3s ease-in-out .5s infinite}
+  @keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.86)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.035)}}
+  .spin{width:30px;height:30px;border:3px solid rgba(246,198,74,.3);border-top-color:#f6c64a;
+    border-radius:50%;position:absolute;top:78%;left:50%;margin:-15px 0 0 -15px;z-index:2;animation:sp .8s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
+  #splash .sfoot{position:absolute;bottom:46px;left:0;right:0;z-index:2;text-align:center;
+    color:#7e91a6;font-size:11px;font-weight:700;letter-spacing:2.5px}
   html.embed,body.embed{overflow:hidden}
 </style>
 <script>
@@ -66,7 +76,6 @@
   var STANDALONE = (window.navigator.standalone === true);
   // Spustené z plochy a token máme → appku vložíme do fullscreen iframe;
   // top-level zostane na github.io → standalone bez Safari pásov. Token ide cez src.
-  // Standalone bez tokenu / bežné Safari → landing page nižšie (button / token input).
   if (STANDALONE && TOKEN) {
     document.documentElement.className += " embed";
     document.addEventListener("DOMContentLoaded", function(){
@@ -85,18 +94,21 @@
 <body>
   <!-- Standalone + token: fullscreen iframe shell (skrytý kým JS nezistí standalone) -->
   <div id="appwrap">
-    <div id="splash"><img src="apple-touch-icon.png?v=1" alt=""><div class="spin"></div></div>
+    <div id="splash">
+      <img class="slogo" src="smecka-logo.svg" alt="SMEČKA Prešov">
+      <div class="spin"></div>
+      <div class="sfoot">SMEČKA&nbsp;&nbsp;PREŠOV</div>
+    </div>
     <iframe id="appframe" title="SMEČKA" allow="clipboard-write"></iframe>
   </div>
 
   <!-- Bežné Safari / standalone bez tokenu: landing page -->
-  <img class="ic" src="apple-touch-icon.png?v=1" alt="SMEČKA">
-  <h1>SMEČKA</h1>
+  <img class="logo" src="smecka-logo.svg" alt="SMEČKA Prešov">
   <p class="sub">Financie &amp; dochádzka tímu</p>
 
   <a class="btn" id="openBtn" href="#">Otvoriť →</a>
 
-  <div class="hint" id="hint">📲 Pridaj na plochu: ťukni <b>Zdieľať</b> → <b>Pridať na plochu</b>.</div>
+  <div class="hint" id="hint">📲 Pridaj na plochu: ťukni <b>Zdieľať</b> → <b>Pridať na plochu</b> a appka sa otvára na celú obrazovku.</div>
 
   <!-- Záložné vloženie tokenu (ak by chýbal v URL aj v pamäti) -->
   <div class="hint warn hidden" id="tokWarn">
