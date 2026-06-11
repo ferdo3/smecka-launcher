@@ -18,7 +18,7 @@
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;min-height:100%}
-  body{background:radial-gradient(120% 95% at 50% 26%, #1b3d5e 0%, #142e49 52%, #0c1d30 100%);
+  body{background:radial-gradient(125% 100% at 50% 30%, #16324f 0%, #112840 52%, #0a1828 100%);
     color:#fff;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;padding:40px 28px;min-height:100vh;position:relative;overflow:hidden}
@@ -50,7 +50,7 @@
   #splash::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
     width:34vh;height:34vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.07),transparent 68%)}
   #splash .slogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:min(58vw,240px);height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));z-index:2;
+    width:min(58vw,240px);aspect-ratio:1001/1020;height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));z-index:2;
     animation:pop .5s ease-out, breathe 3s ease-in-out .5s infinite}
   @keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.86)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.035)}}
