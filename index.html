@@ -18,12 +18,12 @@
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;min-height:100%}
-  body{background:radial-gradient(120% 80% at 50% 20%, #1f4a72 0%, #16324f 48%, #0f2438 100%);
+  body{background:radial-gradient(120% 95% at 50% 26%, #1b3d5e 0%, #142e49 52%, #0c1d30 100%);
     color:#fff;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;padding:40px 28px;min-height:100vh;position:relative;overflow:hidden}
   body::before{content:"";position:absolute;top:17%;left:50%;transform:translateX(-50%);
-    width:38vh;height:38vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.15),transparent 65%);pointer-events:none}
+    width:30vh;height:30vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.07),transparent 68%);pointer-events:none}
   /* LANDING — nové logo (SVG), ~20% menšie, žltý button */
   img.logo{width:min(62vw,264px);height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));position:relative;z-index:2;margin-bottom:22px}
   .sub{font-size:14px;font-weight:600;opacity:.92;letter-spacing:.3px;margin:0 0 30px;position:relative;z-index:2}
@@ -44,11 +44,11 @@
   #appframe{display:block;border:0;background:#fff;width:100%;height:100%}
   /* SPLASH — nové logo + animácia, spinner na strede medzery logo↔footer, footer centrovaný */
   #splash{position:absolute;inset:0;z-index:1;
-    background:radial-gradient(120% 80% at 50% 42%, #1f4a72 0%, #16324f 50%, #0f2438 100%);
+    background:radial-gradient(120% 95% at 50% 42%, #1b3d5e 0%, #142e49 52%, #0c1d30 100%);
     color:#fff;transition:opacity .3s;pointer-events:none;overflow:hidden}
   #splash.hide{opacity:0}
   #splash::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
-    width:44vh;height:44vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.14),transparent 65%)}
+    width:34vh;height:34vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.07),transparent 68%)}
   #splash .slogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:min(58vw,240px);height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));z-index:2;
     animation:pop .5s ease-out, breathe 3s ease-in-out .5s infinite}
