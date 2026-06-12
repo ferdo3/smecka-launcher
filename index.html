@@ -12,9 +12,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#16324f">
-<!-- ŽIADNY manifest: start_url by pri spustení z plochy zahodil ?token=…
-     Token držíme cez URL + localStorage. Standalone rieši apple-mobile-web-app-capable.
-     v2.60.111: nové logo SMEČKA Prešov (SVG) + redizajn landing/splash (mockup-schválené). -->
+<!-- PWA manifest (Android „Inštalovať aplikáciu" + iOS Pridať na plochu). start_url bez tokenu je OK —
+     token sa drží v localStorage (uloží sa pri prvom otvorení s ?token=…), takže standalone spustenie
+     ho má z pamäte. v2.60.111: nové logo. v2.60.122: manifest + SW pre Android installable PWA. -->
+<link rel="manifest" href="manifest.json">
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;min-height:100%}
@@ -73,7 +74,9 @@
     else { TOKEN = localStorage.getItem(LS_KEY) || ""; }     // inak skús zapamätaný
   } catch (e) {}
   var TARGET = TOKEN ? (BASE + "&token=" + encodeURIComponent(TOKEN)) : BASE;
-  var STANDALONE = (window.navigator.standalone === true);
+  // navigator.standalone je iOS-only; Android štandard je display-mode media query — kontrolujeme oboje.
+  var STANDALONE = (window.navigator.standalone === true)
+                || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   // Spustené z plochy a token máme → appku vložíme do fullscreen iframe;
   // top-level zostane na github.io → standalone bez Safari pásov. Token ide cez src.
   if (STANDALONE && TOKEN) {
@@ -88,6 +91,10 @@
       frame.addEventListener("load", function(){ if (splash) splash.className = "hide"; });
       frame.src = TARGET;
     });
+  }
+  // v2.60.122: registruj minimálny SW (passthrough) — Chrome PWA installability. Cesta relatívna (base path).
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
   }
 </script>
 </head>
