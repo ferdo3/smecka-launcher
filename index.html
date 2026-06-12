@@ -10,6 +10,7 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2">
 <meta name="apple-mobile-web-app-title" content="SMEČKA">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#16324f">
 <!-- PWA manifest (Android „Inštalovať aplikáciu" + iOS Pridať na plochu). start_url bez tokenu je OK —
@@ -74,14 +75,23 @@
     else { TOKEN = localStorage.getItem(LS_KEY) || ""; }     // inak skús zapamätaný
   } catch (e) {}
   var TARGET = TOKEN ? (BASE + "&token=" + encodeURIComponent(TOKEN)) : BASE;
-  // navigator.standalone je iOS-only; Android štandard je display-mode media query — kontrolujeme oboje.
-  var STANDALONE = (window.navigator.standalone === true)
-                || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  // Spustené z plochy a token máme → appku vložíme do fullscreen iframe;
-  // top-level zostane na github.io → standalone bez Safari pásov. Token ide cez src.
-  if (STANDALONE && TOKEN) {
+  // navigator.standalone je iOS-only; Android/desktop Chrome používa display-mode media query.
+  function isStandalone() {
+    return (window.navigator.standalone === true)
+        || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+  // v2.60.123: ROBUSTNÁ detekcia — Chrome niekedy nastaví display-mode až PO prvom vyhodnotení v <head>,
+  // preto skúšame opakovane (head + DOMContentLoaded + load + krátky interval + display-mode listener).
+  // _entered guard = appku do iframe vložíme len RAZ. Spustené z plochy + token → fullscreen iframe shell.
+  var _entered = false;
+  function enterApp() {
+    if (_entered) return;
+    if (!TOKEN) { try { TOKEN = localStorage.getItem(LS_KEY) || ""; } catch (e) {} }  // re-read token (istota)
+    if (!isStandalone() || !TOKEN) return;
+    _entered = true;
+    var TGT = BASE + "&token=" + encodeURIComponent(TOKEN);
     document.documentElement.className += " embed";
-    document.addEventListener("DOMContentLoaded", function(){
+    function render() {
       document.body.className += " embed";
       var wrap = document.getElementById("appwrap");
       var frame = document.getElementById("appframe");
@@ -89,8 +99,19 @@
       if (!wrap || !frame) return;
       wrap.style.display = "block";
       frame.addEventListener("load", function(){ if (splash) splash.className = "hide"; });
-      frame.src = TARGET;
-    });
+      frame.src = TGT;
+    }
+    if (document.body) render(); else document.addEventListener("DOMContentLoaded", render);
+  }
+  enterApp();                                               // pokus hneď (head)
+  document.addEventListener("DOMContentLoaded", enterApp);  // po DOM
+  window.addEventListener("load", enterApp);                // po full load
+  var _tries = 0, _iv = setInterval(function () {           // krátky retry — display-mode môže nabehnúť neskôr
+    enterApp();
+    if (_entered || ++_tries > 15) clearInterval(_iv);     // ~3 s max
+  }, 200);
+  if (window.matchMedia) {                                  // ak sa display-mode zmení na standalone
+    try { window.matchMedia('(display-mode: standalone)').addEventListener('change', enterApp); } catch (e) {}
   }
   // v2.60.122: registruj minimálny SW (passthrough) — Chrome PWA installability. Cesta relatívna (base path).
   if ('serviceWorker' in navigator) {
