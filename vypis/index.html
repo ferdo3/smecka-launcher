@@ -2,161 +2,25 @@
 <html lang="sk">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SMEČKA — Finančný výpis</title>
-
-<!-- PWA: vlastný manifest v tomto podpriečinku → inštaluje sa ako SAMOSTATNÁ appka
-     vedľa hlavnej SMEČKY (iný scope, iný start_url, iný názov na ploche).
-     Ikony sa ťahajú z rodičovského priečinka — žiadne duplikáty binárok. -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#16324f">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SMEČKA výpis">
-<link rel="apple-touch-icon" href="../apple-touch-icon.png">
-<link rel="icon" href="../icon-192.png">
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SMEČKA — Finančný výpis presunutý</title>
+<link rel="canonical" href="https://smecka-presov.github.io/">
+<meta http-equiv="refresh" content="0; url=https://smecka-presov.github.io/">
 <style>
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;background:#0c2238;overflow:hidden;}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e9f1fa;}
-
-  /* Výpis sa renderuje na celú plochu. Safe-area si rieši sám (je to vlastná stránka). */
-  #frame{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#0c2238;}
-
-  /* SPLASH — prevzatý 1:1 z hlavného launchera (rovnaký brand, rovnaká animácia).
-     Bez neho hráč po klepnutí na ikonu pozeral na prázdnu navy plochu, kým server
-     prešiel celú históriu pohybov. `aspect-ratio` rezervuje výšku ešte pred
-     dekódovaním SVG → logo neposkočí (lekcia v2.60.111). */
-  #splash{position:fixed;inset:0;z-index:8;
-    background:radial-gradient(120% 95% at 50% 42%, #1b3d5e 0%, #142e49 52%, #0c1d30 100%);
-    color:#fff;transition:opacity .3s;overflow:hidden;}
-  #splash.hide{opacity:0;pointer-events:none;}
-  #splash::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
-    width:34vh;height:34vh;border-radius:50%;
-    background:radial-gradient(circle,rgba(242,194,79,.07),transparent 68%);}
-  #splash .slogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-    width:min(58vw,240px);aspect-ratio:1001/1020;height:auto;z-index:2;
-    filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));
-    animation:pop .5s ease-out, breathe 3s ease-in-out .5s infinite;}
-  @keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.86)}
-                 to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-  @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}
-                     50%{transform:translate(-50%,-50%) scale(1.035)}}
-  #splash .spin{width:30px;height:30px;border:3px solid rgba(246,198,74,.3);border-top-color:#f6c64a;
-    border-radius:50%;position:absolute;top:78%;left:50%;margin:-15px 0 0 -15px;z-index:2;
-    animation:sp .8s linear infinite;}
-  @keyframes sp{to{transform:rotate(360deg)}}
-  #splash .sfoot{position:absolute;bottom:46px;left:0;right:0;z-index:2;text-align:center;
-    color:#7e91a6;font-size:11px;font-weight:700;letter-spacing:2.5px;}
-  /* Poistka: keby sa načítanie nikdy nedokončilo (vypadnutý signál), nech hráč
-     nepozerá na točiace sa logo donekonečna. */
-  #splash .sfail{position:absolute;bottom:96px;left:0;right:0;z-index:3;text-align:center;
-    display:none;padding:0 24px;color:#e9f1fa;font-size:13px;line-height:1.5;}
-  #splash.failed .sfail{display:block;}
-  #splash.failed .spin{display:none;}
-  #splash .sfail button{margin-top:10px;border:1px solid #f5a623;background:transparent;color:#f5a623;
-    font:inherit;font-size:13px;font-weight:700;padding:8px 18px;border-radius:9px;cursor:pointer;}
-
-  /* Lišta „pridaj na plochu" — len v bežnom prehliadači, nie v nainštalovanej appke.
-     Dá sa zavrieť a zapamätá si to (localStorage), aby neotravovala pri každom otvorení. */
-  #tip{position:fixed;left:0;right:0;bottom:0;z-index:5;display:none;
-       padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-       background:rgba(12,34,56,.96);border-top:1px solid rgba(255,255,255,.14);
-       font-size:12px;line-height:1.45;align-items:center;gap:10px;}
-  #tip.show{display:flex;}
-  #tip img{width:26px;height:26px;flex:0 0 auto;}
-  #tip span{flex:1;color:rgba(233,241,250,.85);}
-  #tip b{color:#f5a623;}
-  #tip button{flex:0 0 auto;border:1px solid rgba(255,255,255,.22);background:transparent;
-              color:#e9f1fa;font:inherit;font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer;}
+  html,body{margin:0;height:100%;background:#0c2238;color:#e9f1fa;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  a{color:#f5a623;font-weight:700;}
 </style>
 </head>
 <body>
-
-<iframe id="frame" title="SMEČKA — finančný výpis" allow="clipboard-write"></iframe>
-
-<div id="splash">
-  <img class="slogo" src="../smecka-logo.svg" alt="SMEČKA Prešov">
-  <div class="spin"></div>
-  <div class="sfail">
-    Výpis sa nepodarilo načítať.<br>Skontroluj pripojenie.
-    <br><button id="retry" type="button">Skúsiť znova</button>
+  <!-- Výpis sa presťahoval na organizačnú doménu (odkaz pre hráčov nemá niesť
+       osobnú prezývku vlastníka účtu). Táto stránka ostáva len ako presmerovanie,
+       aby neexistovali dve kópie, ktoré by sa časom rozišli. -->
+  <div>
+    <p>Finančný výpis sa presťahoval.</p>
+    <p><a href="https://smecka-presov.github.io/">Pokračovať na smecka-presov.github.io</a></p>
   </div>
-  <div class="sfoot">FINANČNÝ VÝPIS</div>
-</div>
-
-<div id="tip">
-  <img src="../icon-192.png" alt="">
-  <span id="tiptext"></span>
-  <button id="tipx" type="button">OK</button>
-</div>
-
-<script>
-/* Cieľ = produkčný finančný výpis. BEZ tokenu — stránka je čítacia a nevolá
-   žiadny zápisový endpoint, takže sa tu nedá nič pokaziť ani zmeniť.
-   (Rovnaký deployment ako hlavný launcher; base URL je v tomto repe už dnes.) */
-var TARGET = "https://script.google.com/macros/s/AKfycbxYLRcslCg1c35B1qitXYblGJup4WaoIZg9ZaC2VCRR-BeO80DdoQSpoCYBNIYp1ARPHA/exec?app=vypis";
-
-var frame  = document.getElementById('frame');
-var splash = document.getElementById('splash');
-var done   = false;
-
-/* Splash zmizne, až keď je výpis naozaj načítaný (iframe `load`). */
-frame.addEventListener('load', function () {
-  done = true;
-  splash.className = 'hide';
-});
-
-/* Poistka proti nekonečnému točeniu: ak sa do 25 s nič nenačíta, ukáž
-   zrozumiteľnú hlášku a tlačidlo. Cold start GAS býva pár sekúnd, takže
-   25 s je bezpečne nad bežným časom a spustí sa len pri reálnom probléme. */
-setTimeout(function () {
-  if (!done) splash.className = 'failed';
-}, 25000);
-
-document.getElementById('retry').addEventListener('click', function () {
-  location.reload();
-});
-
-frame.src = TARGET;
-
-/* Service worker = podmienka, aby Android Chrome ponúkol „Inštalovať aplikáciu".
-   Bez neho dostaneš len obyčajnú skratku. Registruje sa až po načítaní, nech
-   nebrzdí prvé zobrazenie. */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function () {
-    navigator.serviceWorker.register('sw.js').catch(function () {});
-  });
-}
-
-/* Tip „pridaj na plochu" — iba v bežnom prehliadači. V nainštalovanej appke
-   (standalone) by bol nezmysel. iOS hlási standalone cez navigator.standalone,
-   Android cez display-mode media query — kontrolujeme oboje (lekcia v2.60.123). */
-(function () {
-  var LS = 'smecka_vypis_tip_off';
-  var standalone = false;
-  try {
-    standalone = (navigator.standalone === true) ||
-                 (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  } catch (e) {}
-  var dismissed = false;
-  try { dismissed = localStorage.getItem(LS) === '1'; } catch (e) {}
-  if (standalone || dismissed) return;
-
-  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  document.getElementById('tiptext').innerHTML = isIOS
-    ? 'Chceš výpis po ruke? Klepni na <b>Zdieľať</b> a zvoľ <b>Pridať na plochu</b>.'
-    : 'Chceš výpis po ruke? V menu prehliadača zvoľ <b>Inštalovať aplikáciu</b>.';
-
-  var tip = document.getElementById('tip');
-  tip.classList.add('show');
-  document.getElementById('tipx').addEventListener('click', function () {
-    tip.classList.remove('show');
-    try { localStorage.setItem(LS, '1'); } catch (e) {}
-  });
-})();
-</script>
+  <script>location.replace("https://smecka-presov.github.io/");</script>
 </body>
 </html>
