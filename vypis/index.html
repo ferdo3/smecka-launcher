@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SMEČKA — Finančný výpis</title>
+
+<!-- PWA: vlastný manifest v tomto podpriečinku → inštaluje sa ako SAMOSTATNÁ appka
+     vedľa hlavnej SMEČKY (iný scope, iný start_url, iný názov na ploche).
+     Ikony sa ťahajú z rodičovského priečinka — žiadne duplikáty binárok. -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16324f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SMEČKA výpis">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" href="../icon-192.png">
+
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;background:#0c2238;overflow:hidden;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#e9f1fa;}
+
+  /* Výpis sa renderuje na celú plochu. Safe-area si rieši sám (je to vlastná stránka). */
+  #frame{position:fixed;inset:0;width:100%;height:100%;border:0;display:block;background:#0c2238;}
+
+  /* Lišta „pridaj na plochu" — len v bežnom prehliadači, nie v nainštalovanej appke.
+     Dá sa zavrieť a zapamätá si to (localStorage), aby neotravovala pri každom otvorení. */
+  #tip{position:fixed;left:0;right:0;bottom:0;z-index:5;display:none;
+       padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+       background:rgba(12,34,56,.96);border-top:1px solid rgba(255,255,255,.14);
+       font-size:12px;line-height:1.45;align-items:center;gap:10px;}
+  #tip.show{display:flex;}
+  #tip img{width:26px;height:26px;flex:0 0 auto;}
+  #tip span{flex:1;color:rgba(233,241,250,.85);}
+  #tip b{color:#f5a623;}
+  #tip button{flex:0 0 auto;border:1px solid rgba(255,255,255,.22);background:transparent;
+              color:#e9f1fa;font:inherit;font-size:12px;padding:5px 10px;border-radius:8px;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<iframe id="frame" title="SMEČKA — finančný výpis" allow="clipboard-write"></iframe>
+
+<div id="tip">
+  <img src="../icon-192.png" alt="">
+  <span id="tiptext"></span>
+  <button id="tipx" type="button">OK</button>
+</div>
+
+<script>
+/* Cieľ = produkčný finančný výpis. BEZ tokenu — stránka je čítacia a nevolá
+   žiadny zápisový endpoint, takže sa tu nedá nič pokaziť ani zmeniť.
+   (Rovnaký deployment ako hlavný launcher; base URL je v tomto repe už dnes.) */
+var TARGET = "https://script.google.com/macros/s/AKfycbxYLRcslCg1c35B1qitXYblGJup4WaoIZg9ZaC2VCRR-BeO80DdoQSpoCYBNIYp1ARPHA/exec?app=vypis";
+
+document.getElementById('frame').src = TARGET;
+
+/* Service worker = podmienka, aby Android Chrome ponúkol „Inštalovať aplikáciu".
+   Bez neho dostaneš len obyčajnú skratku. Registruje sa až po načítaní, nech
+   nebrzdí prvé zobrazenie. */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+
+/* Tip „pridaj na plochu" — iba v bežnom prehliadači. V nainštalovanej appke
+   (standalone) by bol nezmysel. iOS hlási standalone cez navigator.standalone,
+   Android cez display-mode media query — kontrolujeme oboje (lekcia v2.60.123). */
+(function () {
+  var LS = 'smecka_vypis_tip_off';
+  var standalone = false;
+  try {
+    standalone = (navigator.standalone === true) ||
+                 (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  } catch (e) {}
+  var dismissed = false;
+  try { dismissed = localStorage.getItem(LS) === '1'; } catch (e) {}
+  if (standalone || dismissed) return;
+
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  document.getElementById('tiptext').innerHTML = isIOS
+    ? 'Chceš výpis po ruke? Klepni na <b>Zdieľať</b> a zvoľ <b>Pridať na plochu</b>.'
+    : 'Chceš výpis po ruke? V menu prehliadača zvoľ <b>Inštalovať aplikáciu</b>.';
+
+  var tip = document.getElementById('tip');
+  tip.classList.add('show');
+  document.getElementById('tipx').addEventListener('click', function () {
+    tip.classList.remove('show');
+    try { localStorage.setItem(LS, '1'); } catch (e) {}
+  });
+})();
+</script>
+</body>
+</html>
