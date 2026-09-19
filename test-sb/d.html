@@ -44,8 +44,13 @@
     var o = String(e.origin || "");
     if (!/^https:\/\/([a-z0-9-]+\.)*(googleusercontent\.com|google\.com)$/.test(o)) return;
     var d = e.data; if (!d || d.smecka !== "vzhlad") return;
-    var v = (d.v === "light" || d.v === "dark") ? d.v : "auto";
-    try { if (v === "auto") localStorage.removeItem(VZ_KEY); else localStorage.setItem(VZ_KEY, v); } catch (x) {}
+    var v = (d.v === "light" || d.v === "dark") ? d.v : "auto", mine = null;
+    try { mine = localStorage.getItem(VZ_KEY); } catch (x) {}
+    if (mine !== "light" && mine !== "dark" && mine !== "auto") mine = null;
+    /* launcher = hlavný zdroj voľby (jeho úložisko prežije nasadenia appky). Ťuknutie v appke (set) ho prepíše;
+       pozdrav pri štarte: launcher má voľbu → pošle ju appke; nemá → prevezme voľbu appky (ak nejakú má). */
+    if (d.set || (mine === null && v !== "auto")) { try { localStorage.setItem(VZ_KEY, v); } catch (x) {} mine = v; }
+    if (!d.set && mine !== null && mine !== v && e.source) { try { e.source.postMessage({ smecka: "vzhlad-set", v: mine }, e.origin); } catch (x) {} }
     if (typeof d.top === "number" && d.top >= 0 && d.top < 200) { try { localStorage.setItem(VZ_TOPKEY, String(Math.round(d.top))); } catch (x) {} }
     vzApply(); vzLayout();
   });
