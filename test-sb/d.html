@@ -40,8 +40,13 @@
   }
   vzApply();
   if (window.matchMedia) { try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", vzApply); } catch (e) {} }
+  /* DIAG (len test D): čo launcher prijal/poslal — riadok dole na 20 s */
+  var DG = [], DG0 = Date.now();
+  function dg(t) { DG.push(((Date.now() - DG0) / 1000).toFixed(1) + "s " + t); var el = document.getElementById("vzdiag"); if (el) el.textContent = DG.slice(-7).join("\n"); }
+  dg("štart: uložené=" + (function () { try { return localStorage.getItem("smecka_vzhlad_testd"); } catch (e) { return "ERR"; } })());
   window.addEventListener("message", function (e) {
     var o = String(e.origin || "");
+    try { dg("prijaté od " + (o.replace(/^https:\/\//, "").slice(0, 18) || "?") + ": " + JSON.stringify(e.data).slice(0, 70) + " src=" + (e.source ? "áno" : "NIE")); } catch (x) {}
     if (!/^https:\/\/([a-z0-9-]+\.)*(googleusercontent\.com|google\.com)$/.test(o)) return;
     var d = e.data; if (!d || d.smecka !== "vzhlad") return;
     var v = (d.v === "light" || d.v === "dark") ? d.v : "auto", mine = null;
@@ -50,7 +55,8 @@
     /* launcher = hlavný zdroj voľby (jeho úložisko prežije nasadenia appky). Ťuknutie v appke (set) ho prepíše;
        pozdrav pri štarte: launcher má voľbu → pošle ju appke; nemá → prevezme voľbu appky (ak nejakú má). */
     if (d.set || (mine === null && v !== "auto")) { try { localStorage.setItem(VZ_KEY, v); } catch (x) {} mine = v; }
-    if (!d.set && mine !== null && mine !== v && e.source) { try { e.source.postMessage({ smecka: "vzhlad-set", v: mine }, e.origin); } catch (x) {} }
+    if (!d.set && mine !== null && mine !== v && e.source) { try { e.source.postMessage({ smecka: "vzhlad-set", v: mine }, e.origin); dg("POSLANÉ appke: " + mine); } catch (x) { dg("CHYBA poslania: " + x.message); } }
+    else dg("neposielam (set=" + !!d.set + ", moje=" + mine + ", appka=" + v + ")");
     if (typeof d.top === "number" && d.top >= 0 && d.top < 200) { try { localStorage.setItem(VZ_TOPKEY, String(Math.round(d.top))); } catch (x) {} }
     vzApply(); vzLayout();
   });
@@ -188,6 +194,8 @@
 <body>
   <!-- Standalone + token: fullscreen iframe shell (skrytý kým JS nezistí standalone) -->
   <div id="vzprobe"></div>
+  <pre id="vzdiag" onclick="this.remove()" style="position:fixed;left:6px;right:6px;bottom:96px;z-index:3000;margin:0;padding:6px 8px;font:10px/1.35 ui-monospace,Menlo,monospace;white-space:pre-wrap;color:#fff;background:rgba(200,30,30,.88);border-radius:8px;pointer-events:auto"></pre>
+  <script>setTimeout(function(){var d=document.getElementById("vzdiag");if(d)d.remove();},20000);if(typeof dg==="function")dg("DOM ok");</script>
   <div id="appwrap">
     <div id="splash">
       <img class="slogo" src="../smecka-logo.svg" alt="SMEČKA Prešov">
