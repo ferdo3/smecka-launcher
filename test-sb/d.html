@@ -31,7 +31,7 @@
   /* NASADENIE 1 — okolie hodín vo farbe appky. iOS 26 ignoruje theme-color a farbu pruhu berie z pozadia stránky pri prvom
      vykreslení; black-translucent sa od 26.1 správa nestále → nestavať na tom, ako iOS pruh nakreslí, len na farbe.
      Voľbu Vzhľad posiela appka (postMessage), launcher si ju pamätá vo vlastnom úložisku (appka je v cudzom rámci). */
-  var VZ_KEY = "smecka_vzhlad_testd", VZ_BG = { light: "#f2f2f7", dark: "#000000" };
+  var VZ_KEY = "smecka_vzhlad_testd", VZ_TOPKEY = "smecka_apptop_testd", VZ_BG = { light: "#f2f2f7", dark: "#000000" };
   function vzChoice() { try { var v = localStorage.getItem(VZ_KEY); return (v === "light" || v === "dark") ? v : "auto"; } catch (e) { return "auto"; } }
   function vzApply() {
     var c = vzChoice(), dark = c === "dark" || (c === "auto" && !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches));
@@ -46,7 +46,8 @@
     var d = e.data; if (!d || d.smecka !== "vzhlad") return;
     var v = (d.v === "light" || d.v === "dark") ? d.v : "auto";
     try { if (v === "auto") localStorage.removeItem(VZ_KEY); else localStorage.setItem(VZ_KEY, v); } catch (x) {}
-    vzApply();
+    if (typeof d.top === "number" && d.top >= 0 && d.top < 200) { try { localStorage.setItem(VZ_TOPKEY, String(Math.round(d.top))); } catch (x) {} }
+    vzApply(); vzLayout();
   });
   /* ③ posun pod hodiny: iOS z plochy kreslí stránku pod hodiny; env() v iOS 26 hlási často 0 → max(env, odhad podľa výšky
      obrazovky). Prebytok nevidno (okolie má farbu appky). Prepočet pri zmene okna a 2× po štarte (iOS mení výšku okna neskoro). */
@@ -54,7 +55,9 @@
   function vzLayout() {
     var ios = /iP(hone|od)/.test(navigator.userAgent) && window.navigator.standalone === true;
     var env = 0, p = document.getElementById("vzprobe"); if (p) env = Math.round(p.getBoundingClientRect().height);
-    var sh = Math.max(screen.height, screen.width), top = ios ? Math.max(env, VZ_TOP[sh] || 59) : env;
+    var sh = Math.max(screen.height, screen.width), need = ios ? Math.max(env, VZ_TOP[sh] || 59) : env;
+    var app = 0; try { app = parseInt(localStorage.getItem(VZ_TOPKEY), 10) || 0; } catch (e) {}
+    var top = Math.max(0, need - app);   /* appka si časť (alebo celé) odsadenie robí sama → launcher len zvyšok, nie dvakrát */
     document.documentElement.style.setProperty("--vztop", top + "px");
     var w = document.getElementById("appwrap"); if (w) { w.style.bottom = "1px"; void w.offsetHeight; w.style.bottom = ""; }   /* vynútiť prepočet výšky */
   }
