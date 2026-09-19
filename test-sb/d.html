@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SB D</title>
+<link rel="apple-touch-icon" href="../apple-touch-icon.png?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png?v=2">
+<link rel="apple-touch-icon-precomposed" href="../apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="../icon-512.png?v=2">
+<meta name="apple-mobile-web-app-title" content="SB D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" id="tcol" content="#f2f2f7">
+<meta name="robots" content="noindex">
+<!-- PWA manifest LEN mimo iOS (Android „Inštalovať aplikáciu", v2.60.122).
+     2026-09-19: iOS ikona z plochy má vlastné úložisko (localStorage zo Safari nevidí) a s manifestom
+     sa spúšťa na start_url bez tokenu → pýtala token. Bez manifestu iOS uloží do ikony aktuálnu
+     adresu aj s ?token=… (ako pred v2.60.122). Už nainštalované ikony sa nemenia. -->
+<script>
+  (function () {
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS || true) return;   /* TEST D: bez manifestu */
+    var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.json';
+    document.head.appendChild(l);
+  })();
+</script>
+<script>
+  /* NASADENIE 1 — okolie hodín vo farbe appky. iOS 26 ignoruje theme-color a farbu pruhu berie z pozadia stránky pri prvom
+     vykreslení; black-translucent sa od 26.1 správa nestále → nestavať na tom, ako iOS pruh nakreslí, len na farbe.
+     Voľbu Vzhľad posiela appka (postMessage), launcher si ju pamätá vo vlastnom úložisku (appka je v cudzom rámci). */
+  var VZ_KEY = "smecka_vzhlad_testd", VZ_BG = { light: "#f2f2f7", dark: "#000000" };
+  function vzChoice() { try { var v = localStorage.getItem(VZ_KEY); return (v === "light" || v === "dark") ? v : "auto"; } catch (e) { return "auto"; } }
+  function vzApply() {
+    var c = vzChoice(), dark = c === "dark" || (c === "auto" && !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches));
+    var r = document.documentElement; r.classList.toggle("vz-dark", dark); r.classList.toggle("vz-light", !dark);
+    var m = document.getElementById("tcol"); if (m) m.setAttribute("content", dark ? VZ_BG.dark : VZ_BG.light);   /* Android Chrome */
+  }
+  vzApply();
+  if (window.matchMedia) { try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", vzApply); } catch (e) {} }
+  window.addEventListener("message", function (e) {
+    var o = String(e.origin || "");
+    if (!/^https:\/\/([a-z0-9-]+\.)*(googleusercontent\.com|google\.com)$/.test(o)) return;
+    var d = e.data; if (!d || d.smecka !== "vzhlad") return;
+    var v = (d.v === "light" || d.v === "dark") ? d.v : "auto";
+    try { if (v === "auto") localStorage.removeItem(VZ_KEY); else localStorage.setItem(VZ_KEY, v); } catch (x) {}
+    vzApply();
+  });
+  /* ③ posun pod hodiny: iOS z plochy kreslí stránku pod hodiny; env() v iOS 26 hlási často 0 → max(env, odhad podľa výšky
+     obrazovky). Prebytok nevidno (okolie má farbu appky). Prepočet pri zmene okna a 2× po štarte (iOS mení výšku okna neskoro). */
+  var VZ_TOP = { 667: 20, 736: 20, 812: 50, 844: 47, 852: 59, 874: 62, 896: 48, 926: 47, 932: 59, 956: 62 };
+  function vzLayout() {
+    var ios = /iP(hone|od)/.test(navigator.userAgent) && window.navigator.standalone === true;
+    var env = 0, p = document.getElementById("vzprobe"); if (p) env = Math.round(p.getBoundingClientRect().height);
+    var sh = Math.max(screen.height, screen.width), top = ios ? Math.max(env, VZ_TOP[sh] || 59) : env;
+    document.documentElement.style.setProperty("--vztop", top + "px");
+    var w = document.getElementById("appwrap"); if (w) { w.style.bottom = "1px"; void w.offsetHeight; w.style.bottom = ""; }   /* vynútiť prepočet výšky */
+  }
+  window.addEventListener("resize", vzLayout);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", vzLayout);
+  document.addEventListener("DOMContentLoaded", function () { vzLayout(); setTimeout(vzLayout, 300); setTimeout(vzLayout, 1200); });
+  window.addEventListener("pageshow", vzLayout);
+</script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;min-height:100%}
+  body{background:radial-gradient(125% 100% at 50% 30%, #16324f 0%, #112840 52%, #0a1828 100%);
+    color:#fff;font-family:-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:40px 28px;min-height:100vh;position:relative;overflow:hidden}
+  body::before{content:"";position:absolute;top:17%;left:50%;transform:translateX(-50%);
+    width:30vh;height:30vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.07),transparent 68%);pointer-events:none}
+  /* LANDING — nové logo (SVG), ~20% menšie, žltý button */
+  img.logo{width:min(62vw,264px);height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));position:relative;z-index:2;margin-bottom:22px}
+  .sub{font-size:14px;font-weight:600;opacity:.92;letter-spacing:.3px;margin:0 0 30px;position:relative;z-index:2}
+  a.btn,button.btn{position:relative;z-index:2;display:inline-flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#f6c64a,#e9a92f);color:#16324f;font-weight:900;font-size:16px;
+    text-decoration:none;padding:13px 36px;min-height:46px;border-radius:13px;border:0;
+    box-shadow:0 7px 18px rgba(233,169,47,.4);letter-spacing:.3px;cursor:pointer;font-family:inherit}
+  a.btn.off{opacity:.45;pointer-events:none}
+  .hint{margin-top:0;position:absolute;bottom:44px;left:30px;right:30px;z-index:2;font-size:12.5px;opacity:.82;line-height:1.55}
+  .hint b{color:#fff}
+  .warn{background:rgba(0,0,0,.22);border-radius:12px;padding:14px 16px;position:static;bottom:auto;left:auto;right:auto;margin-top:18px}
+  .tokbox{margin-top:8px;display:flex;gap:8px;flex-direction:column;align-items:center}
+  .tokbox input{font-size:16px;padding:12px 14px;border-radius:12px;border:0;width:260px;text-align:center;letter-spacing:1px}
+  .hidden{display:none}
+  /* Full-bleed shell — top-level zostáva github.io (standalone bez Safari chrome),
+     v2shell sa renderuje vo fullscreen iframe. iframe = 100%×100%, v2shell rieši safe-area sám. */
+  #appwrap{position:fixed;inset:0;z-index:1000;display:none;background:#16324f;overflow:hidden}
+  #appframe{display:block;border:0;background:#fff;width:100%;height:100%}
+  html.embed #appwrap{box-sizing:border-box}
+  /* SPLASH — nové logo + animácia, spinner na strede medzery logo↔footer, footer centrovaný */
+  #splash{position:absolute;inset:0;z-index:1;
+    background:radial-gradient(120% 95% at 50% 42%, #1b3d5e 0%, #142e49 52%, #0c1d30 100%);
+    color:#fff;transition:opacity .3s;pointer-events:none;overflow:hidden}
+  #splash.hide{opacity:0}
+  #splash::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
+    width:34vh;height:34vh;border-radius:50%;background:radial-gradient(circle,rgba(242,194,79,.07),transparent 68%)}
+  #splash .slogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:min(58vw,240px);aspect-ratio:1001/1020;height:auto;filter:drop-shadow(0 9px 22px rgba(0,0,0,.4));z-index:2;
+    animation:pop .5s ease-out, breathe 3s ease-in-out .5s infinite}
+  @keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.86)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  @keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.035)}}
+  .spin{width:30px;height:30px;border:3px solid rgba(246,198,74,.3);border-top-color:#f6c64a;
+    border-radius:50%;position:absolute;top:78%;left:50%;margin:-15px 0 0 -15px;z-index:2;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #splash .sfoot{position:absolute;bottom:46px;left:0;right:0;z-index:2;text-align:center;
+    color:#7e91a6;font-size:11px;font-weight:700;letter-spacing:2.5px}
+  html.embed,body.embed{overflow:hidden}
+  /* NASADENIE 1: farby okolia (svetlá/tmavá appka) */
+  html.vz-light { --vzbg: #f2f2f7; --vzfoot: #6e6e73; }
+  html.vz-dark { --vzbg: #000; --vzfoot: #98989f; }
+  html.embed, html.embed body { background: var(--vzbg); }
+  #vzprobe { position: fixed; top: 0; left: 0; width: 1px; height: env(safe-area-inset-top); visibility: hidden; pointer-events: none; }
+  html.embed #appwrap { background: var(--vzbg); padding-top: var(--vztop, 0px); }
+  html.embed #appframe { background: var(--vzbg); }
+  html.embed #splash { background: var(--vzbg); }
+  html.embed #splash::before { display: none; }
+  html.embed #splash .sfoot { color: var(--vzfoot); }
+  html.embed #splash .slogo { filter: drop-shadow(0 6px 16px rgba(0,0,0,.18)); }
+</style>
+<script>
+  // Token-passthrough + zapamätanie. Token sa NIKDY neukladá v repe — len v URL
+  // tohto launchera a v localStorage zariadenia (per-user, na origine launchera).
+  var BASE = "https://script.google.com/macros/s/AKfycbzEYJo-4SSaQ5UmHrp3Goy0HyR23YaMojEbrSoeB6InoeiWduf1MdgOQ_So202qVGT-Zg/exec?app=v2shell";   /* TEST D: SMECKA_TEST, verzované nasadenie */
+  var LS_KEY = "smecka_token_testd";
+  function getTokFromUrl(){ var m = location.search.match(/[?&]token=([^&]+)/); return m ? decodeURIComponent(m[1]) : ""; }
+  var TOKEN = getTokFromUrl();
+  try {
+    if (TOKEN) { localStorage.setItem(LS_KEY, TOKEN); }     // ulož pri prvom otvorení s tokenom
+    else { TOKEN = localStorage.getItem(LS_KEY) || ""; }     // inak skús zapamätaný
+  } catch (e) {}
+  var TARGET = TOKEN ? (BASE + "&token=" + encodeURIComponent(TOKEN)) : BASE;
+  // navigator.standalone je iOS-only; Android/desktop Chrome používa display-mode media query.
+  function isStandalone() {
+    return (window.navigator.standalone === true)
+        || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+  // v2.60.123: ROBUSTNÁ detekcia — Chrome niekedy nastaví display-mode až PO prvom vyhodnotení v <head>,
+  // preto skúšame opakovane (head + DOMContentLoaded + load + krátky interval + display-mode listener).
+  // _entered guard = appku do iframe vložíme len RAZ. Spustené z plochy + token → fullscreen iframe shell.
+  var _entered = false;
+  function enterApp() {
+    if (_entered) return;
+    if (!TOKEN) { try { TOKEN = localStorage.getItem(LS_KEY) || ""; } catch (e) {} }  // re-read token (istota)
+    if (!isStandalone() || !TOKEN) return;
+    _entered = true;
+    var TGT = BASE + "&token=" + encodeURIComponent(TOKEN);
+    document.documentElement.className += " embed";
+    function render() {
+      document.body.className += " embed";
+      var wrap = document.getElementById("appwrap");
+      var frame = document.getElementById("appframe");
+      var splash = document.getElementById("splash");
+      if (!wrap || !frame) return;
+      wrap.style.display = "block";
+      frame.addEventListener("load", function(){ if (splash) splash.className = "hide"; });
+      frame.src = TGT;
+    }
+    if (document.body) render(); else document.addEventListener("DOMContentLoaded", render);
+  }
+  enterApp();                                               // pokus hneď (head)
+  document.addEventListener("DOMContentLoaded", enterApp);  // po DOM
+  window.addEventListener("load", enterApp);                // po full load
+  var _tries = 0, _iv = setInterval(function () {           // krátky retry — display-mode môže nabehnúť neskôr
+    enterApp();
+    if (_entered || ++_tries > 15) clearInterval(_iv);     // ~3 s max
+  }, 200);
+  if (window.matchMedia) {                                  // ak sa display-mode zmení na standalone
+    try { window.matchMedia('(display-mode: standalone)').addEventListener('change', enterApp); } catch (e) {}
+  }
+  // v2.60.122: registruj minimálny SW (passthrough) — Chrome PWA installability. Cesta relatívna (base path).
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
+  }
+</script>
+</head>
+<body>
+  <!-- Standalone + token: fullscreen iframe shell (skrytý kým JS nezistí standalone) -->
+  <div id="vzprobe"></div>
+  <div id="appwrap">
+    <div id="splash">
+      <img class="slogo" src="../smecka-logo.svg" alt="SMEČKA Prešov">
+      <div class="spin"></div>
+      <div class="sfoot">SMEČKA&nbsp;&nbsp;PREŠOV</div>
+    </div>
+    <iframe id="appframe" title="SMEČKA" allow="clipboard-write"></iframe>
+  </div>
+
+  <!-- Bežné Safari / standalone bez tokenu: landing page -->
+  <img class="logo" src="../smecka-logo.svg" alt="SMEČKA Prešov">
+  <p class="sub">Financie &amp; dochádzka tímu</p>
+
+  <a class="btn" id="openBtn" href="#">Otvoriť →</a>
+
+  <div class="hint" id="hint">📲 Pridaj na plochu: ťukni <b>Zdieľať</b> → <b>Pridať na plochu</b> a appka sa otvára na celú obrazovku.</div>
+
+  <!-- Záložné vloženie tokenu (ak by chýbal v URL aj v pamäti) -->
+  <div class="hint warn hidden" id="tokWarn">
+    Zadaj svoj <b>prístupový token</b> (dostal/a si ho v správe). Zapamätá sa na tomto zariadení.
+    <div class="tokbox">
+      <input id="tokInput" placeholder="napr. k2x9b4dt7p" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="btn" id="tokSave">Uložiť a otvoriť →</button>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('openBtn').href = TARGET;
+    if (!TOKEN) {
+      // Token chýba (URL aj pamäť) → skry „Otvoriť", ukáž vkladacie pole.
+      document.getElementById('openBtn').className = 'btn off';
+      document.getElementById('hint').classList.add('hidden');
+      document.getElementById('tokWarn').classList.remove('hidden');
+      document.getElementById('tokSave').addEventListener('click', function(){
+        var t = (document.getElementById('tokInput').value || '').trim();
+        if (!t) return;
+        try { localStorage.setItem(LS_KEY, t); } catch(e){}
+        TOKEN = t;
+        // Ikona z plochy → appku vložiť do rámca launchera (bez Google pruhu); inak odskočiť ako doteraz.
+        if (isStandalone()) { enterApp(); return; }
+        location.replace(BASE + "&token=" + encodeURIComponent(t));
+      });
+    }
+  </script>
+</body>
+</html>
