@@ -13,10 +13,19 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#16324f">
-<!-- PWA manifest (Android „Inštalovať aplikáciu" + iOS Pridať na plochu). start_url bez tokenu je OK —
-     token sa drží v localStorage (uloží sa pri prvom otvorení s ?token=…), takže standalone spustenie
-     ho má z pamäte. v2.60.111: nové logo. v2.60.122: manifest + SW pre Android installable PWA. -->
-<link rel="manifest" href="manifest.json">
+<!-- PWA manifest LEN mimo iOS (Android „Inštalovať aplikáciu", v2.60.122).
+     2026-09-19: iOS ikona z plochy má vlastné úložisko (localStorage zo Safari nevidí) a s manifestom
+     sa spúšťa na start_url bez tokenu → pýtala token. Bez manifestu iOS uloží do ikony aktuálnu
+     adresu aj s ?token=… (ako pred v2.60.122). Už nainštalované ikony sa nemenia. -->
+<script>
+  (function () {
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) return;
+    var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.json';
+    document.head.appendChild(l);
+  })();
+</script>
 <style>
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;min-height:100%}
@@ -158,6 +167,9 @@
         var t = (document.getElementById('tokInput').value || '').trim();
         if (!t) return;
         try { localStorage.setItem(LS_KEY, t); } catch(e){}
+        TOKEN = t;
+        // Ikona z plochy → appku vložiť do rámca launchera (bez Google pruhu); inak odskočiť ako doteraz.
+        if (isStandalone()) { enterApp(); return; }
         location.replace(BASE + "&token=" + encodeURIComponent(t));
       });
     }
