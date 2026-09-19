@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#16324f">
+<meta name="theme-color" id="tcol" content="#f2f2f7">
 <!-- PWA manifest LEN mimo iOS (Android „Inštalovať aplikáciu", v2.60.122).
      2026-09-19: iOS ikona z plochy má vlastné úložisko (localStorage zo Safari nevidí) a s manifestom
      sa spúšťa na start_url bez tokenu → pýtala token. Bez manifestu iOS uloží do ikony aktuálnu
@@ -25,6 +25,50 @@
     var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.json';
     document.head.appendChild(l);
   })();
+</script>
+<script>
+  /* NASADENIE 1 — okolie hodín vo farbe appky. iOS 26 ignoruje theme-color a farbu pruhu berie z pozadia stránky pri prvom
+     vykreslení; black-translucent sa od 26.1 správa nestále → nestavať na tom, ako iOS pruh nakreslí, len na farbe.
+     Voľbu Vzhľad posiela appka (postMessage), launcher si ju pamätá vo vlastnom úložisku (appka je v cudzom rámci). */
+  var VZ_KEY = "smecka_vzhlad", VZ_TOPKEY = "smecka_apptop", VZ_BG = { light: "#f2f2f7", dark: "#000000" };
+  function vzChoice() { try { var v = localStorage.getItem(VZ_KEY); return (v === "light" || v === "dark") ? v : "auto"; } catch (e) { return "auto"; } }
+  function vzApply() {
+    var c = vzChoice(), dark = c === "dark" || (c === "auto" && !!(window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches));
+    var r = document.documentElement; r.classList.toggle("vz-dark", dark); r.classList.toggle("vz-light", !dark);
+    var m = document.getElementById("tcol"); if (m) m.setAttribute("content", dark ? VZ_BG.dark : VZ_BG.light);   /* Android Chrome */
+  }
+  vzApply();
+  if (window.matchMedia) { try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", vzApply); } catch (e) {} }
+  window.addEventListener("message", function (e) {
+    var o = String(e.origin || "");
+    if (!/^https:\/\/([a-z0-9-]+\.)*(googleusercontent\.com|google\.com)$/.test(o)) return;
+    var d = e.data; if (!d || d.smecka !== "vzhlad") return;
+    var v = (d.v === "light" || d.v === "dark") ? d.v : "auto", mine = null;
+    try { mine = localStorage.getItem(VZ_KEY); } catch (x) {}
+    if (mine !== "light" && mine !== "dark" && mine !== "auto") mine = null;
+    /* launcher = hlavný zdroj voľby (jeho úložisko prežije nasadenia appky). Ťuknutie v appke (set) ho prepíše;
+       pozdrav pri štarte: launcher má voľbu → pošle ju appke; nemá → prevezme voľbu appky (ak nejakú má). */
+    if (d.set || (mine === null && v !== "auto")) { try { localStorage.setItem(VZ_KEY, v); } catch (x) {} mine = v; }
+    if (!d.set && mine !== null && mine !== v && e.source) { try { e.source.postMessage({ smecka: "vzhlad-set", v: mine }, e.origin); } catch (x) {} }
+    if (typeof d.top === "number" && d.top >= 0 && d.top < 200) { try { localStorage.setItem(VZ_TOPKEY, String(Math.round(d.top))); } catch (x) {} }
+    vzApply(); vzLayout();
+  });
+  /* ③ posun pod hodiny: iOS z plochy kreslí stránku pod hodiny; env() v iOS 26 hlási často 0 → max(env, odhad podľa výšky
+     obrazovky). Prebytok nevidno (okolie má farbu appky). Prepočet pri zmene okna a 2× po štarte (iOS mení výšku okna neskoro). */
+  var VZ_TOP = { 667: 20, 736: 20, 812: 50, 844: 47, 852: 59, 874: 62, 896: 48, 926: 47, 932: 59, 956: 62 };
+  function vzLayout() {
+    var ios = /iP(hone|od)/.test(navigator.userAgent) && window.navigator.standalone === true;
+    var env = 0, p = document.getElementById("vzprobe"); if (p) env = Math.round(p.getBoundingClientRect().height);
+    var sh = Math.max(screen.height, screen.width), need = ios ? Math.max(env, VZ_TOP[sh] || 59) : env;
+    var app = 0; try { app = parseInt(localStorage.getItem(VZ_TOPKEY), 10) || 0; } catch (e) {}
+    var top = Math.max(0, need - app);   /* appka si časť (alebo celé) odsadenie robí sama → launcher len zvyšok, nie dvakrát */
+    document.documentElement.style.setProperty("--vztop", top + "px");
+    var w = document.getElementById("appwrap"); if (w) { w.style.bottom = "1px"; void w.offsetHeight; w.style.bottom = ""; }   /* vynútiť prepočet výšky */
+  }
+  window.addEventListener("resize", vzLayout);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", vzLayout);
+  document.addEventListener("DOMContentLoaded", function () { vzLayout(); setTimeout(vzLayout, 300); setTimeout(vzLayout, 1200); });
+  window.addEventListener("pageshow", vzLayout);
 </script>
 <style>
   *{box-sizing:border-box}
@@ -53,6 +97,7 @@
      v2shell sa renderuje vo fullscreen iframe. iframe = 100%×100%, v2shell rieši safe-area sám. */
   #appwrap{position:fixed;inset:0;z-index:1000;display:none;background:#16324f;overflow:hidden}
   #appframe{display:block;border:0;background:#fff;width:100%;height:100%}
+  html.embed #appwrap{box-sizing:border-box}
   /* SPLASH — nové logo + animácia, spinner na strede medzery logo↔footer, footer centrovaný */
   #splash{position:absolute;inset:0;z-index:1;
     background:radial-gradient(120% 95% at 50% 42%, #1b3d5e 0%, #142e49 52%, #0c1d30 100%);
@@ -71,6 +116,17 @@
   #splash .sfoot{position:absolute;bottom:46px;left:0;right:0;z-index:2;text-align:center;
     color:#7e91a6;font-size:11px;font-weight:700;letter-spacing:2.5px}
   html.embed,body.embed{overflow:hidden}
+  /* NASADENIE 1: farby okolia (svetlá/tmavá appka) */
+  html.vz-light { --vzbg: #f2f2f7; --vzfoot: #6e6e73; }
+  html.vz-dark { --vzbg: #000; --vzfoot: #98989f; }
+  html.embed, html.embed body { background: var(--vzbg); }
+  #vzprobe { position: fixed; top: 0; left: 0; width: 1px; height: env(safe-area-inset-top); visibility: hidden; pointer-events: none; }
+  html.embed #appwrap { background: var(--vzbg); padding-top: var(--vztop, 0px); }
+  html.embed #appframe { background: var(--vzbg); }
+  html.embed #splash { background: var(--vzbg); }
+  html.embed #splash::before { display: none; }
+  html.embed #splash .sfoot { color: var(--vzfoot); }
+  html.embed #splash .slogo { filter: drop-shadow(0 6px 16px rgba(0,0,0,.18)); }
 </style>
 <script>
   // Token-passthrough + zapamätanie. Token sa NIKDY neukladá v repe — len v URL
@@ -130,6 +186,7 @@
 </head>
 <body>
   <!-- Standalone + token: fullscreen iframe shell (skrytý kým JS nezistí standalone) -->
+  <div id="vzprobe"></div>
   <div id="appwrap">
     <div id="splash">
       <img class="slogo" src="smecka-logo.svg" alt="SMEČKA Prešov">
